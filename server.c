@@ -293,10 +293,14 @@ void* SendScore(int socket_id, uint8_t id){
                 arr[i].logged_on ? "online" : "offline");
         printf("sending this : %s",newbuf);
         // apending newbuf to the old buf
-        if(buf == NULL)
+        if(buf == NULL){
             buf = newbuf;
-        else
-            strcat(buf, newbuf);
+        }
+        else{
+            asprintf(&buf, "%s%s", buf, newbuf);
+            free(newbuf);
+        }
+        free(arr[i].nickname);
     }
     // calculating the lenght of the buffer
     offset = strlen(buf);
@@ -307,6 +311,7 @@ void* SendScore(int socket_id, uint8_t id){
         perror("error in sending numbers of room");
     }
     send(socket_id, buf, offset, 0);
+    free(buf);
     return NULL;
 }
 
@@ -343,21 +348,24 @@ void list_available_room(int socket_id){
             } else
                 asprintf(&newbuf, "%s offline\n", user->nickname);
             printf("sending this : %s",newbuf);
-            // since we are adding \t and \n
-            offset += strlen(newbuf);
             // apending newbuf to the old buf
-            if(buf == NULL)
+            if(buf == NULL){
                 buf = newbuf;
-            else
-                strcat(buf, newbuf);
+            }
+            else {
+                asprintf(&buf, "%s%s", buf, newbuf);
+                free(newbuf);
+            }
             user = user->next;
         }
         // sending the lenght of the string here
+        offset = strlen(buf);
         int16_t stuff = htons(offset);
         if(send(socket_id, &stuff, sizeof(int16_t), 0) <= 0){
             perror("error in sending numbers of room");
         }
         send(socket_id, buf, offset, 0);
+        free(buf);
         ptr = ptr->next;
     }
 }
@@ -377,7 +385,7 @@ void *connection_handler(void *arg){
     printf("\n room id from user %s is %d\n", user->nickname, room_id);
     Leaderboard * room = search_room(room_id);
     if(room == NULL){
-        printf("this room id doesn't exist creating new room!!");
+        printf("this room id doesn't exist crreating new room!!");
         room = create_new_room(room_id);
         number_of_rooms++;
         room->players = 0;
