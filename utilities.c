@@ -10,79 +10,57 @@ extern struct Hang *Hang_last;
 extern struct Leaderboard *Leaderboard_first;
 extern struct Leaderboard *Leaderboard_last;
 
-extern char **users;
-extern char **passwords;
+extern char **nickname;
 
 extern char **word1;
 extern int won;
 extern int played;
+extern size_t number_of_rooms;
 
 
-//read the auth file
-void read_file() {
-    FILE *fp;
-    // struct List *temp;
-    char *fuser, *fpass, buf[100];
-    void **pair;
-    //attempt to load the text file
-    fp = fopen("auth.txt", "r");
-    if (fp == NULL) {
-        puts("Unable to read Auth file");
-        exit(EXIT_FAILURE);
-    }
-
-    fgets(buf, sizeof buf, fp);
-    while (fgets(buf, sizeof buf, fp) != NULL) { //get each line
-        //allocate the memory for the user pass
-        fuser = malloc(10 * sizeof(char));
-        fpass = malloc(10 * sizeof(char));
-
-        pair = malloc(2*sizeof(char*)); //the container
-
-        sscanf(buf, "%s %s", fuser, fpass);
-        pair[0] = fuser;
-        pair[1] = fpass;
-        add_auth_user(pair[0],pair[1]);
-
-    }
-
-    //close connection
-    fclose(fp);
-}
 
 //adds user to list
-void add_auth_user (char * username, char * password){
+void add_auth_user (auth_user *first, auth_user *last,char * nickname){
     struct auth_user * a_user;
     a_user = (struct auth_user*)malloc(sizeof(struct auth_user));
-    a_user->username = username;
-    a_user->password = password;
+    a_user->nickname = nickname;
+    a_user->logged_on = true;
     a_user->next = NULL;
 
-    if (auth_user_first == NULL) {
-        auth_user_first = a_user;
-        auth_user_last = a_user;
+    if (first == NULL) {
+        first = a_user;
+        last = a_user;
     } else {
-        auth_user_last->next = a_user;
-        auth_user_last = a_user;
+        last->next = a_user;
+        last = a_user;
     }
 
+}
+
+void add_user(auth_user *first,auth_user * last,auth_user *user){
+    if (first == NULL){
+        printf("i am adding to the first element \n");
+        first = user;
+        last = user;
+    } else{
+        last->next = user;
+        last = user;
+    }
 }
 
 //search for user and checks password return 0 or 1
-int8_t searchn(struct auth_user *ptr, char* username, char* password){
-    while (ptr!=NULL && strcmp(ptr->username, username) != 0){
+struct auth_user* searchn(struct auth_user *ptr, char* nickname){
+    printf("\n i am inside searchn functioin\n");
+    while(ptr != NULL){
+        printf("\n username is %s\n", ptr->nickname);
+        if(strcmp(ptr->nickname, nickname)== 0){
+            return ptr;
+        }
         ptr = ptr->next;
     }
-
-    if (ptr != NULL && strcmp(ptr->username, username)==0 && ptr != NULL && strcmp(ptr->password, password)==0 ) {
-        // printf("%s found! \n", username);
-        // printf("%s \n", ptr->username);
-        // printf("%s \n", ptr->password);
-        // printf("\n");
-        return 1;
-    }
-    return 0;
+    return ptr;
 }
+
 
 //read hangman file
 void read_file_word() {
@@ -160,15 +138,13 @@ char *printRandom(struct Hang *head)
     return result;
 
 }
-//add game played and username to list
-void add_board (char * username,int won1, int played1 ){
+//add game played and nickname to list
+void add_board (char * nickname,int won1, int played1 ){
     struct Leaderboard * board;
     played = played + played1;
     won = won + won1;
     board = (struct Leaderboard*)malloc(sizeof(struct Leaderboard));
-    board->username = username;
-    board->won = won;
-    board->played = played;
+    board->players = 0;
     board->next = NULL;
 
     if (Leaderboard_first == NULL) {
@@ -181,48 +157,34 @@ void add_board (char * username,int won1, int played1 ){
 
 }
 
-//prints user debugging
-void print_list(void)
-{
-    struct auth_user *ptr = auth_user_first;
 
-    printf("\n -------Printing list Start------- \n");
-    while(ptr != NULL)
-    {
-        printf("\n [%s] [%s] \n",ptr->username, ptr->password);
+uint8_t create_new_room(){
+    if(Leaderboard_first != NULL){
+        Leaderboard *new = malloc(sizeof(Leaderboard));
+        new->id = Leaderboard_last->id + 1;
+        Leaderboard_last = new;
+        return new->id;
+    } else{
+        Leaderboard_first = malloc(sizeof(Leaderboard));
+        Leaderboard_last = Leaderboard_first;
+        Leaderboard_first->id = 0;
+        return 0;
+    }
+}
+
+void add_to_room(uint8_t id, auth_user * user){
+    Leaderboard *ptr = Leaderboard_first;
+    while(!(ptr == NULL || ptr->id == id)){
         ptr = ptr->next;
     }
-    printf("\n -------Printing list End------- \n");
-
-
+    add_user(ptr->first, ptr->last, user);
 }
-//prints words debugging
-void print_list_word(void)
-{
-    struct Hang *ptr = Hang_first;
 
-    printf("\n -------Printing list Start------- \n");
-    while(ptr != NULL)
-    {
-        printf("\n [%s]  \n",ptr->word1);
+
+Leaderboard* search_room(uint8_t id) {
+    Leaderboard *ptr = Leaderboard_first;
+    while(!(ptr == NULL || ptr->id == id))
         ptr = ptr->next;
-    }
-    printf("\n -------Printing list End------- \n");
-
-
+    return ptr;
 }
-//prints scoreboard
-void print_list_board(void)
-{
-    struct Leaderboard *ptr = Leaderboard_first;
 
-    printf("\n -------Printing list Start------- \n");
-    while(ptr != NULL)
-    {
-        printf("\n [%s] [%d] [%d] \n",ptr->username, ptr->won, ptr->played);
-        ptr = ptr->next;
-    }
-    printf("\n -------Printing list End------- \n");
-
-
-}
