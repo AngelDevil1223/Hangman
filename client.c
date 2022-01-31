@@ -48,9 +48,15 @@ int game(int sock, char* username){
 	int gletters;
 	uint16_t converter;
 	char word1[MAX];
-	char word2[MAX];
 	int GameOver = 0;
 	int winner = 0;
+    char category[MAX];
+    
+    int nsend;
+    if ((nsend= recv(sock, category, MAX, 0)) <= 0  )
+        return ERROR;
+    category[nsend] = '\0';
+    printf("\nThe category is : %s\n", category);
 
 	while(1){
 
@@ -85,10 +91,6 @@ int game(int sock, char* username){
 		if(recv(sock, word1, MAX, 0) <= 0){
 			return ERROR;
 		}
-		//word2
-		if(recv(sock, word2, MAX, 0) <= 0 ){
-			return ERROR;
-		}
 
     /* could not firgue out how to get the space between the words
         so just run the loop twice, will fix later
@@ -99,9 +101,6 @@ int game(int sock, char* username){
 			printf("%c ", word1[i]);
 		}
 
-		for(int i = 0; i < strlen(word2); i++){
-			printf(" %c", word2[i]);
-		}
 		printf("\n\n");
 
 		//breaks the loop if won
@@ -187,7 +186,6 @@ void Welcome(){
 	printf("============================================\n\n\n");
 	printf("Welcome to the Online Hangman Gaming System\n\n");
 	printf("============================================\n\n");
-	printf("You are required to login with your registered username and Password \n\n");
 }
 
 //Scoreboard gets values from server and displays them
@@ -197,10 +195,14 @@ void Board(int sock, char* username){
   if( recv(sock, &size_of_buffer, sizeof(int16_t), 0) < 0)
       printf("Error in recieving ");
   size_of_buffer = htons(size_of_buffer);
+  /*printf("\nsize of buffer is %hu\n", size_of_buffer);*/
   char buf[size_of_buffer];
-  if( recv(sock, &buf, size_of_buffer, 0) < 0)
+  int nread;
+  if( (nread = recv(sock, &buf, size_of_buffer, 0)) < 0)
       printf("Error in recieving ");
-  printf("\n%s\n", buf);
+  buf[nread] = '\0';
+  printf("\n%s", buf);
+  printf("\n\n\n");
   printf("================================================================================\n\n");
 
 }
@@ -283,7 +285,6 @@ int main(int argc, char *argv[]) {
     }
     Game_play(sockfd,nickname);
 
-
     printf("Disconnected\n");
     close(sockfd);
 
@@ -298,14 +299,16 @@ void recieve_available_room(int socket_id){
     printf("total number of rooms availabel %d \n", number_of_rooms);
     for(size_t i = 0 ; i < number_of_rooms; ++i){
         printf("Room id %lu\n", i);
-        printf("Players online are : \n");
+        printf("Players are : \n");
         int16_t size_of_buffer;
+        int nread;
         if( recv(socket_id, &size_of_buffer, sizeof(int16_t), 0) < 0)
             printf("Error in recieving ");
         size_of_buffer = htons(size_of_buffer);
         char buf[size_of_buffer];
-        if( recv(socket_id, &buf, size_of_buffer, 0) < 0)
+        if( (nread = recv(socket_id, &buf, size_of_buffer , 0)) < 0)
             printf("Error in recieving ");
+        buf[nread] = '\0';
         printf("\n%s\n", buf);
     }
 }
