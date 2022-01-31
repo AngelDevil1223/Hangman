@@ -94,6 +94,10 @@ int hangman(int socket_id, char* username){
     printf("Word1 is %s and word2 is %s \n", word1, word2);
     printf("Word1 length is %zu and word2 length is %zu \n", strlen(word1), strlen(word2));
 
+    if(send(socket_id, word2, MAX, 0) <= 0){
+        return ERROR;
+    }
+
     //so many error
     char* client_guessed_letters = calloc(MAX, sizeof(char));
 
@@ -101,17 +105,11 @@ int hangman(int socket_id, char* username){
     int num_guesses = guesses_min(strlen(word1) + strlen(word2) + 10);
 
     char cword1[MAX];
-    char cword2[MAX];
 
     for(int i = 0; i < strlen(word1); i++){
         cword1[i] = 95;
     }
     cword1[strlen(word1)] = '\0';
-
-    for(int i = 0; i < strlen(word2); i++){
-        cword2[i] = 95;
-    }
-    cword2[strlen(word2)] = '\0';
 
     //initialize client guessed single letter
     char recv_letter;
@@ -128,7 +126,7 @@ int hangman(int socket_id, char* username){
         }
 
         //checking if words are the same will fix later bad bad code
-        if(strcmp(word1, cword1) == 0 && strcmp(word2, cword2) == 0){
+        if(strcmp(word1, cword1) == 0 ){
             winner = 1;
         }
 
@@ -156,9 +154,6 @@ int hangman(int socket_id, char* username){
 
         //send words need to get rid of double loop
         if(send(socket_id, cword1, MAX, 0) <= 0){
-            return ERROR;
-        }
-        if(send(socket_id, cword2, MAX, 0) <= 0){
             return ERROR;
         }
 
@@ -195,11 +190,6 @@ int hangman(int socket_id, char* username){
             }
         }
 
-        for(int i = 0; i < strlen(word2); i++){
-            if(word2[i] == recv_letter){
-                cword2[i] = word2[i];
-            }
-        }
 
     }
     return 0;
@@ -235,6 +225,8 @@ void Game_play(auth_user *user, uint8_t leaderboard_id) {
                 break;
         }
     } while (input != QUIT); //quit if 3 is pressed
+    // since the user is quit set the logged_on status to false
+    user->logged_on = false;
 }
 
 //gets client input
@@ -275,6 +267,7 @@ void* SendScore(int socket_id, uint8_t id){
         arr[i].played = user->played;
         arr[i].score = user->score;
         arr[i].first_game_score = user->first_game_score;
+        arr[i].logged_on = user->logged_on;
         user = user->next;
         ++i;
     }
@@ -285,25 +278,29 @@ void* SendScore(int socket_id, uint8_t id){
     size_t offset = 0;
     user = ptr->first;
     printf("printing the sorted leaderboard\n");
+    // sending the leaderboard in descending order
     for(; i >= 0; i--){
         char *newbuf;
         if(arr[i].played >= 20){
             arr[i].score -= arr[i].first_game_score;
         }
-        asprintf(&newbuf, "Player  - %s\nNumber of games won  - %lu\nNumber of games played  - %lu\nScore - %d\n", 
+        asprintf(&newbuf, "\nPlayer  - %s\nRoom Number - %hu\nNumber of games won  - %lu\nNumber of games played  - %lu\nScore - %d\nStatus - %s\n", 
                 arr[i].nickname,
+                id,
                 arr[i].won,
                 arr[i].played,
-                arr[i].score);
+                arr[i].score,
+                arr[i].logged_on ? "online" : "offline");
         printf("sending this : %s",newbuf);
-        // since we are adding \t and \n
-        offset += strlen(newbuf);
         // apending newbuf to the old buf
         if(buf == NULL)
             buf = newbuf;
         else
             strcat(buf, newbuf);
     }
+    // calculating the lenght of the buffer
+    offset = strlen(buf);
+    printf("\nsize of buffer is %lu\n", offset);
     // sending the lenght of the string here
     int16_t stuff = htons(offset);
     if(send(socket_id, &stuff, sizeof(int16_t), 0) <= 0){
@@ -341,7 +338,10 @@ void list_available_room(int socket_id){
         auth_user *user = ptr->first;
         while(user != NULL){
             char *newbuf;
-            asprintf(&newbuf, "%s \n", user->nickname);
+            if(user->logged_on){
+                asprintf(&newbuf, "%s online\n", user->nickname);
+            } else
+                asprintf(&newbuf, "%s offline\n", user->nickname);
             printf("sending this : %s",newbuf);
             // since we are adding \t and \n
             offset += strlen(newbuf);
@@ -418,13 +418,13 @@ void *connection_handler(void *arg){
         user->score = 0;
         user->played = 0;
 
-        add_user(room->first, room->last, user);
+        /*add_user(room->first, room->last, user);*/
         if(room->first == NULL){
             room->first = user;
             room->last = user;
             user->next = NULL;
             printf("\n room->fist is  null\n");
-        }else{
+        } else{
             room->last->next = user;
             room->last = user;
         }
