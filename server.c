@@ -374,12 +374,12 @@ void *connection_handler(void *arg){
     if(recv(user->sockkfd, &converter, sizeof(uint16_t), 0) <= 0)
         perror("error in recieving room code");
     room_id = (uint8_t)htons(converter);
+    printf("\n room id from user %s is %d\n", user->nickname, room_id);
     Leaderboard * room = search_room(room_id);
     if(room == NULL){
-        room_id = create_new_room();
-        room_id = 0;
+        printf("this room id doesn't exist creating new room!!");
+        room = create_new_room(room_id);
         number_of_rooms++;
-        room = search_room(room_id);
         room->players = 0;
     }
     // checks if found out or not or the nickname is taken
@@ -515,7 +515,7 @@ int main(int argc, char *argv[]) {
     printf("Server starts listnening ...\n");
 
     /* repeat: accept, send, close the connection */
-    /* for every accepted connection, use a sepetate process or thread to serve it */
+    /* for every accepted connection, use a sepetate thread to serve it */
     while(1) {  /* main accept() loop */
         pthread_t tid;
         sin_size = sizeof(struct sockaddr_in);

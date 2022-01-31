@@ -76,7 +76,7 @@ void read_file_word() {
 
     fgets(buf, sizeof buf, fp);
     while (fgets(buf, sizeof buf, fp) != NULL) { //get each line
-        //allocate the memory for the user pass
+                                                 //allocate the memory for the user pass
         words1 = malloc(10 * sizeof(char));
 
         pair = malloc(2*sizeof(char*)); //the container
@@ -113,7 +113,7 @@ char *printRandom(struct Hang *head)
 {
     // IF list is empty
     if (head == NULL)
-       return(0);
+        return(0);
 
     // Use a different seed value so that we don't get
     // same result each time we run this program
@@ -130,7 +130,7 @@ char *printRandom(struct Hang *head)
     {
         // change result with probability 1/n
         if (rand() % n == 0)
-           result = current->word1;
+            result = current->word1;
 
         // Move to next node
         current = current->next;
@@ -158,19 +158,34 @@ void add_board (char * nickname,int won1, int played1 ){
 }
 
 
-uint8_t create_new_room(){
+Leaderboard* create_new_room(uint8_t id){
     if(Leaderboard_first != NULL){
         Leaderboard *new = malloc(sizeof(Leaderboard));
-        new->id = Leaderboard_last->id + 1;
+        new->id = id;
+        new->next = NULL;
+        Leaderboard_last->next = new;
         Leaderboard_last = new;
-        return new->id;
+        new->players = 0;
+        return new;
     } else{
         Leaderboard_first = malloc(sizeof(Leaderboard));
         Leaderboard_last = Leaderboard_first;
         Leaderboard_first->id = 0;
-        return 0;
+        return Leaderboard_first;
     }
 }
+
+Leaderboard* search_room(uint8_t id) {
+    Leaderboard *ptr = Leaderboard_first;
+    while(ptr != NULL){
+        if(ptr->id == id)
+            return ptr;
+        ptr = ptr->next;
+    }
+    return NULL;
+}
+
+
 
 void add_to_room(uint8_t id, auth_user * user){
     Leaderboard *ptr = Leaderboard_first;
@@ -178,13 +193,5 @@ void add_to_room(uint8_t id, auth_user * user){
         ptr = ptr->next;
     }
     add_user(ptr->first, ptr->last, user);
-}
-
-
-Leaderboard* search_room(uint8_t id) {
-    Leaderboard *ptr = Leaderboard_first;
-    while(!(ptr == NULL || ptr->id == id))
-        ptr = ptr->next;
-    return ptr;
 }
 

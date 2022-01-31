@@ -59,7 +59,7 @@ void remove_user(auth_user *ptr,char *nickname);
 struct auth_user* searchn(struct auth_user *ptr, char* nickname) ;
 
 // create new room or leaderboard and returns its id
-uint8_t create_new_room();
+Leaderboard* create_new_room(uint8_t id);
 
 Leaderboard* search_room(uint8_t id);
 

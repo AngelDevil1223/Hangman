@@ -48,6 +48,7 @@ int game(int sock, char* username){
 	int gletters;
 	uint16_t converter;
 	char word1[MAX];
+	char word2[MAX];
 	int GameOver = 0;
 	int winner = 0;
     char category[MAX];
@@ -185,7 +186,6 @@ int menu_input(int sock, char* username) {
 void Welcome(){
 	printf("============================================\n\n\n");
 	printf("Welcome to the Online Hangman Gaming System\n\n");
-	printf("============================================\n\n");
 }
 
 //Scoreboard gets values from server and displays them
@@ -260,10 +260,11 @@ int main(int argc, char *argv[]) {
         }
         uint16_t room_number = 0;
         recieve_available_room(sockfd);
-        printf("If you want to create new room send a room id bigger than the numberr of rooms. \n");
+        printf("If you want to create new room send a room id bigger than the number of rooms. \n");
         printf("Enter the room number you want to join -----> ");
         scanf("%hu", &room_number);
-        if(send(sockfd, &room_number, sizeof(uint16_t), 0) == -1)
+        uint16_t converter = ntohs(room_number);
+        if(send(sockfd, &converter, sizeof(uint16_t), 0) == -1)
             printf("error in sending room number");
         if((str_len = recv(sockfd,auth,20,0)) == -1){
             printf("Error receiving authentication token\n");
@@ -272,7 +273,7 @@ int main(int argc, char *argv[]) {
 
         // int8_t test;
         if(strcmp(auth, "Auth") != 0){
-            printf("nickname is taken please choose new nickname\n");
+            printf("That nickname is already taken please choose new nickname\n");
         }
         else break; // if nickname is not taken continue
     }
@@ -285,6 +286,7 @@ int main(int argc, char *argv[]) {
     }
     Game_play(sockfd,nickname);
 
+
     printf("Disconnected\n");
     close(sockfd);
 
@@ -296,7 +298,7 @@ void recieve_available_room(int socket_id){
     if( recv(socket_id, &number_of_rooms, sizeof(int16_t), 0) < 0)
         printf("Error in recieving ");
     number_of_rooms = htons(number_of_rooms);
-    printf("total number of rooms availabel %d \n", number_of_rooms);
+    printf("total number of rooms available %d \n", number_of_rooms);
     for(size_t i = 0 ; i < number_of_rooms; ++i){
         printf("Room id %lu\n", i);
         printf("Players are : \n");
