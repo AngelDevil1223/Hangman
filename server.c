@@ -37,9 +37,6 @@ void *connection_handler(void *user);
 void list_available_room(int socket_id);
 void sleep_and_lock(int socket_id, size_t * player_number);
 
-
-
-
 pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
 struct auth_user *auth_user_first = NULL;
 struct auth_user *auth_user_last = NULL;
@@ -189,8 +186,6 @@ int hangman(int socket_id, char* username){
                 cword1[i] = word1[i];
             }
         }
-
-
     }
     return 0;
 }
